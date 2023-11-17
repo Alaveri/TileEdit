@@ -327,6 +327,14 @@ paket-files/
 __pycache__/
 *.pyc
 
+xmsdebug.bin
+.bin/
+bp.*
+turbo.*
+tp.*
+test*.*
+
+
 # Cake - Uncomment if you are using it
 # tools/**
 # !tools/packages.config
