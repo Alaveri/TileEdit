@@ -29,6 +29,7 @@ type
   private
   public
     Tabs: PTabView;
+    ToolsPanel: PPanel;
     LastOpenDir: string;
     LastSaveDir: string;
     function LastOpenPath: string;
@@ -103,17 +104,22 @@ begin
     tileset^.SaveToFile(dialog^.Filename);
     CheckError(tileset);
   end;
-  Desktop^.Controls^.Remove(dialog);
+  FreeAndNil(dialog);
 end;
 
 function TTileApp.AddTileset: PTileset;
 var
   tileset: PTileset;
   tab: PTab;
+  name: string;
 begin
   tileset := New(PTileset, Create);
   if not CheckAlloc(tileset) then exit;
-  tab := Tabs^.NewTab;
+  if tileset^.Filename = '' then
+    name := 'Untitled.til'
+  else
+    name := tileset^.Filename;
+  tab := Tabs^.NewTab(ExtractFilename(name));
   if not CheckAlloc(tab) then begin
     FreeAndNil(tileset);
     exit;
@@ -190,7 +196,7 @@ begin
       FreeAndNil(tileset);
       exit;
     end;
-    tab := Tabs^.NewTab;
+    tab := Tabs^.NewTab(tileset^.Filename);
     if not CheckAlloc(tab) then begin
       FreeAndNil(tileset);
       exit;
@@ -200,7 +206,7 @@ begin
     Tabs^.Visible := true;
     Tabs^.Draw;
   end;
-  Desktop^.Controls^.Remove(dialog);
+  FreeAndNil(dialog);
 end;
 
 procedure TTileApp.NewExecute;
@@ -230,7 +236,7 @@ begin
   dialog := New(PAboutDialog, Create);
   if not CheckAlloc(dialog) then exit;
   dialog^.ShowModal;
-  Desktop^.Controls^.Remove(dialog);
+  FreeAndNil(dialog);
 end;
 
 function TTileApp.HandleActionExecute(ASender: PObject; AAction: PAction): boolean;
@@ -254,15 +260,6 @@ end;
 procedure TTileApp.Init;
 begin
   inherited Init;
-  Tabs := New(PTabView, CreateParent('Tabs', Desktop));
-  Tabs^.BorderStyle := bsNone;
-  Tabs^.Visible := false;
-  Tabs^.SetBounds(
-    0,
-    Desktop^.Menubar^.Height,
-    Desktop^.MenuBar^.Width,
-    Desktop^.Height - Desktop^.Statusbar^.Height - Desktop^.Menubar^.Height + 3
-  );
   LastOpenDir := GetCurrentDirectory;
   LastSaveDir := GetCurrentDirectory;
 end;
@@ -275,8 +272,8 @@ begin
   inherited InitControls;
   TileApplication := @self;
   InitParams;
-  InitActions;
-  InitAppControls;
+  InitActions(Desktop^.ActionList);
+  InitAppControls(@self);
   Desktop^.SetupControls;
 end;
 

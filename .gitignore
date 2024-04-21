@@ -4,3 +4,9 @@ turbo.*
 tpx.*
 *.bin
 *.$$$
+*.lpi
+*.lpr
+*.lps
+backup/
+*.tfa
+lib/

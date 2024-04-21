@@ -6,6 +6,7 @@ uses
   Dialogs,
   Desk,
   Actions,
+  Veridian,
   KeyDrv;
 
 const
@@ -39,8 +40,8 @@ type
     procedure Init; virtual;
   end;
 
-procedure InitActions;
-procedure InitAppControls;
+procedure InitActions(AActionList: PActionList);
+procedure InitAppControls(AApp: PVeridianApp);
 
 implementation
 
@@ -49,12 +50,12 @@ uses
   Common,
   MemDrv,
   GraphDrv,
-  Veridian,
   TileApp,
   Controls,
+  TabView,
   TileCons;
 
-procedure InitAppControls;
+procedure InitAppControls(AApp: PVeridianApp);
 var
   menu: PMenu;
   control: PControl;
@@ -62,42 +63,64 @@ var
   rect: TRect;
   panel: PTextControl;
 begin
-  menu := Desktop^.MenuBar^.NewMenu('FileMenu', '&File');
-  with menu^ do begin
-    NewMenuItem('NewMenuItem', acNew);;
-    NewSeparator;
-    NewMenuItem('OpenMenuItem', acOpen);
-    NewSeparator;
-    NewMenuItem('SaveMenuItem', acSave);
-    NewMenuItem('SaveAsMenuItem', acSaveAs);
-    NewSeparator;
-    NewMenuItem('ExitMenuAction', acExit);
-  end;
+  with PTileApp(AApp)^ do begin
+    StatusBar^.NewHelpPanel;
 
-  menu := Desktop^.MenuBar^.NewMenu('EditMenu', '&Edit');
-  with menu^ do begin
-    NewMenuItem('UndoMenuItem', acUndo);
-    NewMenuItem('RedoMenuItem', acRedo);
-    NewSeparator;
-    NewMenuItem('CutMenuItem', acCut);
-    NewMenuItem('CopyMenuItem', acCopy);
-    NewMenuItem('PasteMeniItem', acPaste);
-    NewMenuItem('DeleteMeniItem', acDelete);
-  end;
+    ToolsPanel := New(PPanel, CreateParent('ToolsPanel', Desktop));
+    with ToolsPanel^ do begin
+      SetBounds(
+        -1,
+        Menubar^.Height - 1,
+        Scale(10),
+        Desktop^.Height - Statusbar^.Height - Menubar^.Height + 5
+      );
+    end;
 
-  menu := Desktop^.MenuBar^.NewMenu('HelpMenu', '&Help');
-  with menu^ do begin
-    NewMenuItem('AboutMenuItem', acAbout);
-  end;
+    menu := MenuBar^.NewMenu('FileMenu', '&File');
+    with menu^ do begin
+      NewMenuItem('NewMenuItem', acNew);;
+      NewSeparator;
+      NewMenuItem('OpenMenuItem', acOpen);
+      NewSeparator;
+      NewMenuItem('SaveMenuItem', acSave);
+      NewMenuItem('SaveAsMenuItem', acSaveAs);
+      NewSeparator;
+      NewMenuItem('ExitMenuAction', acExit);
+    end;
 
-  helpPanel := Desktop^.StatusBar^.NewHelpPanel;
+    menu := MenuBar^.NewMenu('EditMenu', '&Edit');
+    with menu^ do begin
+      NewMenuItem('UndoMenuItem', acUndo);
+      NewMenuItem('RedoMenuItem', acRedo);
+      NewSeparator;
+      NewMenuItem('CutMenuItem', acCut);
+      NewMenuItem('CopyMenuItem', acCopy);
+      NewMenuItem('PasteMeniItem', acPaste);
+      NewMenuItem('DeleteMeniItem', acDelete);
+    end;
+
+    menu := MenuBar^.NewMenu('HelpMenu', '&Help');
+    with menu^ do begin
+      NewMenuItem('AboutMenuItem', acAbout);
+    end;
+
+    Tabs := New(PTabView, CreateParent('Tabs', Desktop));
+    with Tabs^ do begin
+      SetBounds(
+        ToolsPanel^.Width - 2,
+        Menubar^.Height - 1,
+        Desktop^.Width - ToolsPanel^.Width + 3,
+        Desktop^.Height - Statusbar^.Height - Menubar^.Height + 5
+      );
+    end;
+  end;
 end;
 
-procedure InitActions;
+procedure InitActions(AActionList: PActionList);
 var
   action: PAction;
 begin
-  with Desktop^.ActionList^ do begin
+  with AActionList^ do begin
     action := New(PAction, Create(acNew, '&New Tileset', kyCtrlN));
     action^.SetHelpText('Create a new tileset');
     Add(Action);
@@ -170,8 +193,8 @@ var
 begin
   inherited Init;
   Font := VeridianApp^.SystemFont;
-  Width := VeridianApp^.ScaleX(40);
-  Height := VeridianApp^.ScaleY(12);
+  Width := VeridianApp^.Scale(20);
+  Height := VeridianApp^.Scale(12);
   SetTitle('About');
   ButtonAlign := taCenter;
   labelHeight := Font^.Height;
