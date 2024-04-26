@@ -119,7 +119,7 @@ begin
     name := 'Untitled.til'
   else
     name := tileset^.Filename;
-  tab := Tabs^.NewTab(ExtractFilename(name));
+  tab := Tabs^.NewTab(UpperCase(ExtractFullName(name)));
   if not CheckAlloc(tab) then begin
     FreeAndNil(tileset);
     exit;
@@ -196,7 +196,7 @@ begin
       FreeAndNil(tileset);
       exit;
     end;
-    tab := Tabs^.NewTab(tileset^.Filename);
+    tab := Tabs^.NewTab(ExtractFullName(UpperCase(tileset^.Filename)));
     if not CheckAlloc(tab) then begin
       FreeAndNil(tileset);
       exit;
@@ -262,6 +262,7 @@ begin
   inherited Init;
   LastOpenDir := GetCurrentDirectory;
   LastSaveDir := GetCurrentDirectory;
+  Desktop^.DrawBackground := false;
 end;
 
 procedure TTileApp.InitControls;

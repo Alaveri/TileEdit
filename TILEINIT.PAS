@@ -95,7 +95,7 @@ begin
       NewSeparator;
       NewMenuItem('CutMenuItem', acCut);
       NewMenuItem('CopyMenuItem', acCopy);
-      NewMenuItem('PasteMeniItem', acPaste);
+      NewMenuItem('PasteMenuItem', acPaste);
       NewMenuItem('DeleteMeniItem', acDelete);
     end;
 
