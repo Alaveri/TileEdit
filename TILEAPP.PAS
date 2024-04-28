@@ -37,7 +37,6 @@ type
     function HandleActionExecute(ASender: PObject; AAction: PAction): boolean; virtual;
     function AddTileset: PTileset;
     function CheckError(ASender: PExceptionObject): boolean;
-    function CheckAlloc(APointer: pointer): boolean;
     procedure Init; virtual;
     procedure InitControls; virtual;
     procedure InitParams;
@@ -70,7 +69,7 @@ var
   fileOpen: boolean;
 begin
   action := AControl^.Action;
-  fileOpen := Tabs^.Controls^.Count > 0;
+  fileOpen := Tabs^.Count > 0;
   case action^.ActionId of
     acSave: action^.Enabled := fileOpen;
     acSaveAs: action^.Enabled := fileOpen;
@@ -97,7 +96,6 @@ begin
   currentTab := Tabs^.CurrentTab;
   tileset := PTileset(Tabs^.CurrentTab^.Data);
   dialog := New(PFileDialog, Create('Save Tileset As', LastSavePath));
-  if not CheckAlloc(dialog) then exit;
   dialog^.Options := [];
   result := dialog^.ShowModal;
   if result = mrOk then begin
@@ -114,16 +112,11 @@ var
   name: string;
 begin
   tileset := New(PTileset, Create);
-  if not CheckAlloc(tileset) then exit;
   if tileset^.Filename = '' then
     name := 'Untitled.til'
   else
     name := tileset^.Filename;
   tab := Tabs^.NewTab(UpperCase(ExtractFullName(name)));
-  if not CheckAlloc(tab) then begin
-    FreeAndNil(tileset);
-    exit;
-  end;
   tab^.Data := tileset;
   AddTileset := tileset;
 end;
@@ -159,15 +152,6 @@ procedure TTileApp.CloseFile;
 begin
 end;
 
-function TTileApp.CheckAlloc(APointer: pointer): boolean;
-begin
-  CheckAlloc := true;
-  if Assigned(APointer) then
-    exit;
-  CheckAlloc := false;
-  Error(@self, ecNotEnoughMemory);
-end;
-
 function TTileApp.CheckError(ASender: PExceptionObject): boolean;
 begin
   CheckError := true;
@@ -186,21 +170,15 @@ var
   tab: PTab;
 begin
   dialog := New(PFileDialog, Create('Open Tileset', LastOpenPath));
-  if not CheckAlloc(dialog) then exit;
   result := dialog^.ShowModal;
   if result = mrOk then begin
     tileset := New(PTileset, Create);
-    if not CheckAlloc(tileset) then exit;
     tileset^.LoadFromFile(dialog^.Filename);
     if not CheckError(tileset) then begin
       FreeAndNil(tileset);
       exit;
     end;
     tab := Tabs^.NewTab(ExtractFullName(UpperCase(tileset^.Filename)));
-    if not CheckAlloc(tab) then begin
-      FreeAndNil(tileset);
-      exit;
-    end;
     tab^.Data := tileset;
     LastOpenDir := ExtractDirectory(tileset^.Filename);
     Tabs^.Visible := true;
@@ -234,7 +212,6 @@ var
   dialog: PAboutDialog;
 begin
   dialog := New(PAboutDialog, Create);
-  if not CheckAlloc(dialog) then exit;
   dialog^.ShowModal;
   FreeAndNil(dialog);
 end;

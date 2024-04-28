@@ -106,11 +106,12 @@ begin
 
     Tabs := New(PTabView, CreateParent('Tabs', Desktop));
     with Tabs^ do begin
+      BorderStyle := bsNone;
       SetBounds(
-        ToolsPanel^.Width - 2,
-        Menubar^.Height - 1,
+        ToolsPanel^.Width - 1,
+        Menubar^.Height,
         Desktop^.Width - ToolsPanel^.Width + 3,
-        Desktop^.Height - Statusbar^.Height - Menubar^.Height + 5
+        Desktop^.Height - Statusbar^.Height - Menubar^.Height + 3
       );
     end;
   end;
