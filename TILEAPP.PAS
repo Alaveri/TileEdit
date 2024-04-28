@@ -96,7 +96,8 @@ begin
   currentTab := Tabs^.CurrentTab;
   tileset := PTileset(Tabs^.CurrentTab^.Data);
   dialog := New(PFileDialog, Create('Save Tileset As', LastSavePath));
-  dialog^.Options := [];
+  dialog^.Options := [doOverwritePrompt];
+  dialog^.DefaultExt := '.til';
   result := dialog^.ShowModal;
   if result = mrOk then begin
     tileset^.SaveToFile(dialog^.Filename);
@@ -116,7 +117,7 @@ begin
     name := 'Untitled.til'
   else
     name := tileset^.Filename;
-  tab := Tabs^.NewTab(UpperCase(ExtractFullName(name)));
+  tab := Tabs^.NewTab(FirstUpper(ExtractFullName(name)));
   tab^.Data := tileset;
   AddTileset := tileset;
 end;
@@ -170,6 +171,8 @@ var
   tab: PTab;
 begin
   dialog := New(PFileDialog, Create('Open Tileset', LastOpenPath));
+  dialog^.Options := [doFileMustExist];
+  dialog^.DefaultExt := '.til';
   result := dialog^.ShowModal;
   if result = mrOk then begin
     tileset := New(PTileset, Create);
@@ -178,7 +181,7 @@ begin
       FreeAndNil(tileset);
       exit;
     end;
-    tab := Tabs^.NewTab(ExtractFullName(UpperCase(tileset^.Filename)));
+    tab := Tabs^.NewTab(ExtractFullName(FirstUpper(tileset^.Filename)));
     tab^.Data := tileset;
     LastOpenDir := ExtractDirectory(tileset^.Filename);
     Tabs^.Visible := true;
