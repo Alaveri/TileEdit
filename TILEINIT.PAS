@@ -4,9 +4,13 @@ interface
 
 uses
   Dialogs,
+  Objects,
   Desk,
   Actions,
   Veridian,
+  AplTypes,
+  TileType,
+  Combos,
   KeyDrv;
 
 const
@@ -24,20 +28,34 @@ const
   acCut = 2004;
   acPaste = 2005;
   acDelete = 2006;
+  acSettings = 2100;
 
-  { Window Actions }
-  acCloseWindow = 3001;
+  { Tab ACtions }
+  acCloseTab = 3001;
+  acCloseAllTabs = 3002;
 
   { Help Actions }
-  acAbout = 4001;
+  acAbout = 5001;
 type
   PAboutDialog = ^TAboutDialog;
+  PSettingsDialog = ^TSettingsDialog;
 
   TAboutDialog = object(TDialog)
   private
   public
     constructor Create;
     procedure Init; virtual;
+    procedure SetupControls; virtual;
+  end;
+
+  TSettingsDialog = object(TDialog)
+  private
+  public
+    Settings: TTileSettings;
+    VeridianSettings: TVeridianAppSettings;
+    constructor Create(var ASettings: TTileSettings);
+    procedure Init; virtual;
+    procedure SetupControls; virtual;
   end;
 
 procedure InitActions(AActionList: PActionList);
@@ -52,8 +70,7 @@ uses
   GraphDrv,
   TileApp,
   Controls,
-  TabView,
-  TileCons;
+  TabView;
 
 procedure InitAppControls(AApp: PVeridianApp);
 var
@@ -97,6 +114,14 @@ begin
       NewMenuItem('CopyMenuItem', acCopy);
       NewMenuItem('PasteMenuItem', acPaste);
       NewMenuItem('DeleteMeniItem', acDelete);
+      NewSeparator;
+      NewMenuItem('Settings', acSettings);
+    end;
+
+    menu := MenuBar^.NewMenu('TabMenu', '&Tab');
+    with Menu^ do begin
+      NewMenuItem('CloseTabMenuItem', acCloseTab);
+      NewMenuItem('CloseAllTabsMenuItem', acCloseAllTabs);
     end;
 
     menu := MenuBar^.NewMenu('HelpMenu', '&Help');
@@ -170,10 +195,44 @@ begin
     action^.SetHelpText('Delete selection');
     Add(action);
 
-    action := New(PAction, Create(acCloseWindow, '&Close', kyCtrlF4));
-    action^.SetHelpText('Close the current window');
+    action := New(PAction, Create(acCloseTab, '&Close Tab', kyCtrlF4));
+    action^.SetHelpText('Close the active tab');
+    Add(action);
+
+    action := New(PAction, Create(acCloseAllTabs, 'Close A&ll Tabs', 0));
+    action^.SetHelpText('Close all tabs');
+    Add(action);
+
+    action := New(PAction, Create(acSettings, '&Settings', 0));
+    action^.SetHelpText('Edit program settings');
     Add(action);
   end;
+end;
+
+constructor TSettingsDialog.Create(var ASettings: TTileSettings);
+begin
+  inherited Create('SettingsDialog', [mbOk, mbCancel]);
+  Settings.CreateAssign(ASettings);
+  VeridianSettings.CreateAssign(VeridianApp^.Settings);
+end;
+
+procedure TSettingsDialog.Init;
+begin
+  inherited Init;
+  Font := VeridianApp^.SystemFont;
+  Width := VeridianApp^.Scale(25);
+  Height := VeridianApp^.Scale(18);
+  ButtonAlign := taRight;
+  DefaultButton := mbOk;
+  CancelButton := mbCancel;
+  SetTitle('Program Settings');
+end;
+
+procedure TSettingsDialog.SetupControls;
+begin
+  inherited SetupControls;
+  X := CenterX;
+  Y := CenterY;
 end;
 
 constructor TAboutDialog.Create;
@@ -193,6 +252,8 @@ var
   labelHeight: integer;
 begin
   inherited Init;
+  X := CenterX;
+  Y := CenterY;
   Font := VeridianApp^.SystemFont;
   Width := VeridianApp^.Scale(20);
   Height := VeridianApp^.Scale(12);
@@ -247,6 +308,11 @@ begin
     TextAlign := taLeft;
     SetText('Free XMS Memory: ' + FormatLong(Memory.XmsMaxAvail) + ' bytes');
   end;
+end;
+
+procedure TAboutDialog.SetupControls;
+begin
+  inherited SetupControls;
 end;
 
 end.

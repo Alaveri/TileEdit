@@ -7,6 +7,7 @@ tpx.*
 *.lpi
 *.lpr
 *.lps
+*.TD
 backup/
 *.tfa
 lib/

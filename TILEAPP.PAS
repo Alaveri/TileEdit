@@ -20,6 +20,7 @@ uses
   Veridian,
   Desk,
   Views,
+  TileType,
   TileInit;
 
 type
@@ -28,6 +29,7 @@ type
   TTileApp = object(TVeridianApp)
   private
   public
+    TileSettings: TTileSettings;
     Tabs: PTabView;
     ToolsPanel: PPanel;
     LastOpenDir: string;
@@ -45,6 +47,7 @@ type
     procedure OpenExecute;
     procedure SaveAsExecute;
     procedure AboutExecute;
+    procedure EditSettingsExecute;
     procedure UpdateActionControl(AControl: PActionControl); virtual;
     procedure SaveFileAs;
     procedure SaveFile;
@@ -73,6 +76,8 @@ begin
   case action^.ActionId of
     acSave: action^.Enabled := fileOpen;
     acSaveAs: action^.Enabled := fileOpen;
+    acCloseAllTabs: action^.Enabled := fileOpen;
+    acCloseTab: action^.Enabled := fileOpen and (Tabs^.TabIndex >= 0);
   end;
 end;
 
@@ -210,6 +215,20 @@ begin
   SaveFileAs;
 end;
 
+procedure TTileApp.EditSettingsExecute;
+var
+  dialog: PSettingsDialog;
+  result: TModalResult;
+begin
+  dialog := New(PSettingsDialog, Create(TileSettings));
+  result := dialog^.ShowModal;
+  if result = mrOk then begin
+    TileSettings.Assign(dialog^.Settings);
+    VeridianApp^.Settings.Assign(dialog^.VeridianSettings);
+  end;
+  FreeAndNil(dialog);
+end;
+
 procedure TTileApp.AboutExecute;
 var
   dialog: PAboutDialog;
@@ -229,6 +248,7 @@ begin
     acOpen: OpenExecute;
     acSaveAs: SaveAsExecute;
     acAbout: AboutExecute;
+    acSettings: EditSettingsExecute;
     acExit: Close;
   end;
 end;
@@ -243,6 +263,7 @@ begin
   LastOpenDir := GetCurrentDirectory;
   LastSaveDir := GetCurrentDirectory;
   Desktop^.DrawBackground := false;
+  TileSettings.Create;
 end;
 
 procedure TTileApp.InitControls;
@@ -265,5 +286,4 @@ end;
 
 begin
   TileApplication := nil;
-
 end.
