@@ -10,6 +10,7 @@ uses
   Veridian,
   AplTypes,
   TileType,
+  Controls,
   Combos,
   KeyDrv;
 
@@ -43,6 +44,11 @@ type
   TAboutDialog = object(TDialog)
   private
   public
+    TitleLabel: PLabel;
+    VersionLabel: PLabel;
+    FreeConLabel: PLabel;
+    FreeXmsLabel: PLabel;
+    Separator: PHorzSeparator;
     constructor Create;
     procedure Init; virtual;
     procedure SetupControls; virtual;
@@ -53,6 +59,8 @@ type
   public
     Settings: TTileSettings;
     VeridianSettings: TVeridianAppSettings;
+    ResolutionLabel: PLabel;
+    ResolutionEntry: PDropDownList;
     constructor Create(var ASettings: TTileSettings);
     procedure Init; virtual;
     procedure SetupControls; virtual;
@@ -69,7 +77,7 @@ uses
   MemDrv,
   GraphDrv,
   TileApp,
-  Controls,
+  Strings,
   TabView;
 
 procedure InitAppControls(AApp: PVeridianApp);
@@ -217,6 +225,10 @@ begin
 end;
 
 procedure TSettingsDialog.Init;
+var
+  index: integer;
+  current: integer;
+  mode: PGraphicsMode;
 begin
   inherited Init;
   Font := VeridianApp^.SystemFont;
@@ -226,93 +238,123 @@ begin
   DefaultButton := mbOk;
   CancelButton := mbCancel;
   SetTitle('Program Settings');
+  ResolutionLabel := New(PLabel, CreateText('ResLabel', 'Screen Resolution: ', @self));
+  ResolutionLabel^.AutoSize := true;
+  ResolutionEntry := New(PDropDownList, CreateParent('ResEntry', 0, @self));
+  ResolutionEntry^.AutoSize := true;
+  ResolutionEntry^.MaxItems := 10;
+  current := -1;
+  for index := 0 to Graph^.Modes.Count - 1 do begin
+    mode := Graph^.Modes.GetItem(index);
+    if mode = Graph^.Mode then
+      current := index;
+    ResolutionEntry^.Items^.Add(StrPas(mode^.Description), mode);
+  end;
+  ResolutionEntry^.SetSelectedIndex(current);
 end;
 
 procedure TSettingsDialog.SetupControls;
+var
+  yPos: integer;
+  xPos: integer;
+  spacing: integer;
+  rect: TRect;
 begin
   inherited SetupControls;
+  GetContentBounds(rect);
   X := CenterX;
   Y := CenterY;
+  xPos := rect.X + VeridianApp^.Scale(1);
+  yPos := rect.Y + Font^.Height;
+  spacing := Font^.Height + 2 * BorderWidth;
+
+  ResolutionLabel^.X := xPos;
+  ResolutionLabel^.Y := yPos;
+  Inc(yPos, spacing);
+
+  ResolutionEntry^.X := xPos;
+  ResolutionEntry^.Y := yPos;
+  Inc(yPos, spacing);
 end;
 
 constructor TAboutDialog.Create;
 begin
   inherited Create('AboutDialog', [mbOk]);
-  X := CenterX;
-  Y := CenterY;
 end;
 
-procedure TAboutDialog.Init;
+procedure TAboutDialog.SetupControls;
 var
-  control: PLabel;
-  currentLabel: PLabel;
-  separator: PHorzSeparator;
   currentY: integer;
   currentX: integer;
   labelHeight: integer;
+  rect: TRect;
 begin
-  inherited Init;
+  inherited SetupControls;
   X := CenterX;
   Y := CenterY;
-  Font := VeridianApp^.SystemFont;
+  labelHeight := Font^.Height;
+  GetContentBounds(rect);
+  currentX := rect.X;
+  currentY := rect.Y + labelHeight;
+
+  TitleLabel^.SetBounds(currentX, currentY, rect.Width - 1, Font^.Height);
+  Inc(currentY, labelHeight);
+
+  VersionLabel^.SetBounds(currentX, currentY, rect.Width - 1, Font^.Height);
+  Inc(currentY, labelHeight * 2);
+
+  Separator^.SetBounds(currentX, currentY, rect.Width, 1);
+  Inc(currentY, labelHeight);
+
+  FreeConLabel^.SetBounds(currentX, currentY, rect.Width - 1, Font^.Height);
+  Inc(currentY, labelHeight);
+
+  FreeXmsLabel^.SetBounds(currentX, currentY, rect.Width - 1, Font^.Height);
+end;
+
+procedure TAboutDialog.Init;
+begin
+  inherited Init;
   Width := VeridianApp^.Scale(20);
   Height := VeridianApp^.Scale(12);
   SetTitle('About');
   ButtonAlign := taCenter;
-  labelHeight := Font^.Height;
-  currentY := labelHeight;
-  currentX := 0;
-  SetupControls;
 
-  currentLabel := New(PLabel, CreateParent('TitleLabel', Content));
-  with currentLabel^ do begin
+  TitleLabel := New(PLabel, CreateParent('TitleLabel', @self));
+  with TitleLabel^ do begin
     Font := VeridianApp^.SystemFont;
-    SetBounds(currentX, currentY, Content^.Width - 1, Font^.Height);
     Autosize := false;
     TextAlign := taCenter;
     SetText('Alaveri Tileset Editor');
   end;
 
-  Inc(currentY, labelHeight);
-  currentLabel := New(PLabel, CreateParent('VersionLabel', Content));
-  with currentLabel^ do begin
+  VersionLabel := New(PLabel, CreateParent('VersionLabel', @self));
+  with VersionLabel^ do begin
     Font := VeridianApp^.SystemFont;
-    SetBounds(currentX, currentY, Content^.Width - 1, Font^.Height);
     Autosize := false;
     TextAlign := taCenter;
     SetText('Version ' + AppVersion);
   end;
 
-  Inc(currentY, labelHeight * 2);
-  separator := New(PHorzSeparator, CreateParent('Separator', Content));
-  separator^.SetBounds(currentX, currentY, Content^.Width, 1);
+  Separator := New(PHorzSeparator, CreateParent('Separator', @self));
 
-  Inc(currentY, labelHeight);
-  currentLabel := New(PLabel, CreateParent('FreeConLabel', Content));
-  with currentLabel^ do begin
+  FreeConLabel := New(PLabel, CreateParent('FreeConLabel', @self));
+  with FreeConLabel^ do begin
     Font := VeridianApp^.EditorFont;
     Margin := 8;
-    SetBounds(currentX, currentY, Content^.Width - 1, Font^.Height);
     Autosize := false;
     TextAlign := taLeft;
     SetText('Free Memory: ' + FormatLong(MemAvail) + ' bytes');
   end;
 
-  Inc(currentY, labelHeight);
-  currentLabel := New(PLabel, CreateParent('FreeConLabel', Content));
-  with currentLabel^ do begin
+  FreeXmsLabel := New(PLabel, CreateParent('FreeXmsLabel', @self));
+  with FreeXmsLabel^ do begin
     Font := VeridianApp^.EditorFont;
     Margin := 8;
-    SetBounds(currentX, currentY, content^.Width - 1, Font^.Height);
     Autosize := false;
     TextAlign := taLeft;
     SetText('Free XMS Memory: ' + FormatLong(Memory.XmsMaxAvail) + ' bytes');
   end;
-end;
-
-procedure TAboutDialog.SetupControls;
-begin
-  inherited SetupControls;
 end;
 
 end.
