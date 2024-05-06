@@ -62,6 +62,7 @@ type
     ResolutionLabel: PLabel;
     ResolutionEntry: PDropDownList;
     constructor Create(var ASettings: TTileSettings);
+    destructor Free; virtual;
     procedure Init; virtual;
     procedure SetupControls; virtual;
   end;
@@ -76,9 +77,29 @@ uses
   Common,
   MemDrv,
   GraphDrv,
+  ListBox,
   TileApp,
   Strings,
   TabView;
+
+procedure SettingsExecute(ASender: PObject; var AModalResult: TModalResult); far;
+var
+  dialog: PSettingsDialog;
+  dropDown: PDropDownList;
+  mode: PGraphicsMode;
+  item: PListItem;
+begin
+  if AModalResult <> mrOk then
+    exit;
+  dialog := PSettingsDialog(ASender);
+  dropDown := dialog^.ResolutionEntry;
+  item := dropDown^.Items^.GetItem(dropDown^.SelectedIndex);
+  mode := PGraphicsMode(item^.Value);
+  if mode <> Graph^.Mode then begin
+    ShowMessage('Graphics Mode Change', 'New graphics mode will be applied after restart.');
+  end;
+  Desktop^.Draw;
+end;
 
 procedure InitAppControls(AApp: PVeridianApp);
 var
@@ -224,6 +245,11 @@ begin
   VeridianSettings.CreateAssign(VeridianApp^.Settings);
 end;
 
+destructor TSettingsDialog.Free;
+begin
+  Settings.Free;
+end;
+
 procedure TSettingsDialog.Init;
 var
   index: integer;
@@ -251,6 +277,7 @@ begin
     ResolutionEntry^.Items^.Add(StrPas(mode^.Description), mode);
   end;
   ResolutionEntry^.SetSelectedIndex(current);
+  OnActionExecute := @SettingsExecute;
 end;
 
 procedure TSettingsDialog.SetupControls;
