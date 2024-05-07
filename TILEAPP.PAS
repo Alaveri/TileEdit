@@ -4,7 +4,8 @@ unit TileApp;
 interface
 
 uses
-  Objects,
+  AplObj,
+  AplTypes,
   Lists,
   Drawing,
   Tilesets,
@@ -63,8 +64,7 @@ var
 implementation
 
 uses
-  Dialogs,
-  AplTypes;
+  Dialogs;
 
 procedure TTileApp.UpdateActionControl(AControl: PActionControl);
 var
@@ -117,14 +117,14 @@ var
   tab: PTab;
   name: string;
 begin
-  tileset := New(PTileset, Create);
+{  tileset := New(PTileset, Create);
   if tileset^.Filename = '' then
     name := 'Untitled.til'
   else
     name := tileset^.Filename;
   tab := Tabs^.NewTab(FirstUpper(ExtractFullName(name)));
   tab^.Data := tileset;
-  AddTileset := tileset;
+  AddTileset := tileset;}
 end;
 
 procedure TTileApp.NewFile;
@@ -180,8 +180,7 @@ begin
   dialog^.DefaultExt := '.til';
   result := dialog^.ShowModal;
   if result = mrOk then begin
-    tileset := New(PTileset, Create);
-    tileset^.LoadFromFile(dialog^.Filename);
+    tileset := New(PTileset, LoadFromFile(dialog^.Filename));
     if not CheckError(tileset) then begin
       FreeAndNil(tileset);
       exit;

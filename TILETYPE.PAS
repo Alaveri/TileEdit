@@ -4,7 +4,8 @@ unit TileType;
 interface
 
 uses
-  Objects,
+  AplObj,
+  AplTypes,
   Controls;
 
 const

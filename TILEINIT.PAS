@@ -4,7 +4,7 @@ interface
 
 uses
   Dialogs,
-  Objects,
+  AplObj,
   Desk,
   Actions,
   Veridian,
@@ -274,7 +274,7 @@ begin
     mode := Graph^.Modes.GetItem(index);
     if mode = Graph^.Mode then
       current := index;
-    ResolutionEntry^.Items^.Add(StrPas(mode^.Description), mode);
+    ResolutionEntry^.Items^.AddItem(StrPas(mode^.Description), mode);
   end;
   ResolutionEntry^.SetSelectedIndex(current);
   OnActionExecute := @SettingsExecute;
@@ -367,7 +367,7 @@ begin
 
   FreeConLabel := New(PLabel, CreateParent('FreeConLabel', @self));
   with FreeConLabel^ do begin
-    Font := VeridianApp^.EditorFont;
+    Font := VeridianApp^.Fonts^.GetItemById('seattle');
     Margin := 8;
     Autosize := false;
     TextAlign := taLeft;
@@ -376,7 +376,7 @@ begin
 
   FreeXmsLabel := New(PLabel, CreateParent('FreeXmsLabel', @self));
   with FreeXmsLabel^ do begin
-    Font := VeridianApp^.EditorFont;
+    Font := VeridianApp^.Fonts^.GetItemById('seattle');
     Margin := 8;
     Autosize := false;
     TextAlign := taLeft;
