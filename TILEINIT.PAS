@@ -63,6 +63,7 @@ type
     ResolutionEntry: PDropDownList;
     constructor Create(var ASettings: TTileSettings);
     destructor Free; virtual;
+    procedure HandleActionExecute(var AAction: PAction); virtual;
     procedure Init; virtual;
     procedure SetupControls; virtual;
   end;
@@ -81,25 +82,6 @@ uses
   TileApp,
   Strings,
   TabView;
-
-procedure SettingsExecute(ASender: PObject; var AModalResult: TModalResult); far;
-var
-  dialog: PSettingsDialog;
-  dropDown: PDropDownList;
-  mode: PGraphicsMode;
-  item: PListItem;
-begin
-  if AModalResult <> mrOk then
-    exit;
-  dialog := PSettingsDialog(ASender);
-  dropDown := dialog^.ResolutionEntry;
-  item := dropDown^.Items^.GetItem(dropDown^.SelectedIndex);
-  mode := PGraphicsMode(item^.Value);
-  if mode <> Graph^.Mode then begin
-    ShowMessage('Graphics Mode Change', 'New graphics mode will be applied after restart.');
-  end;
-  Desktop^.Draw;
-end;
 
 procedure InitAppControls(AApp: PVeridianApp);
 var
@@ -277,7 +259,6 @@ begin
     ResolutionEntry^.Items^.AddItem(StrPas(mode^.Description), mode);
   end;
   ResolutionEntry^.SetSelectedIndex(current);
-  OnActionExecute := @SettingsExecute;
 end;
 
 procedure TSettingsDialog.SetupControls;
@@ -302,6 +283,23 @@ begin
   ResolutionEntry^.X := xPos;
   ResolutionEntry^.Y := yPos;
   Inc(yPos, spacing);
+end;
+
+procedure TSettingsDialog.HandleActionExecute(var AAction: PAction);
+var
+  mode: PGraphicsMode;
+  item: PListItem;
+begin
+  if AAction^.ModalResult = mrCancel then begin
+    Close;
+    exit;
+  end;
+  item := ResolutionEntry^.SelectedItem;
+  mode := PGraphicsMode(item^.Value);
+  if mode <> Graph^.Mode then begin
+    ShowMessage('Graphics Mode Change', 'New graphics mode will be applied after restart.');
+  end;
+  Close;
 end;
 
 constructor TAboutDialog.Create;

@@ -11,3 +11,4 @@ tpx.*
 backup/
 *.tfa
 lib/
+*.TIL

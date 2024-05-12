@@ -33,8 +33,6 @@ type
     TileSettings: TTileSettings;
     Tabs: PTabView;
     ToolsPanel: PPanel;
-    LastOpenDir: string;
-    LastSaveDir: string;
     function LastOpenPath: string;
     function LastSavePath: string;
     function HandleActionExecute(ASender: PObject; AAction: PAction): boolean; virtual;
@@ -64,6 +62,7 @@ var
 implementation
 
 uses
+  Strings,
   Dialogs;
 
 procedure TTileApp.UpdateActionControl(AControl: PActionControl);
@@ -83,12 +82,12 @@ end;
 
 function TTileApp.LastOpenPath: string;
 begin
-  LastOpenPath := IncludeBackslash(LastOpenDir) + '*.til';
+  LastOpenPath := IncludeBackslash(StrPas(TileSettings.LastOpenDir)) + '*.til';
 end;
 
 function TTileApp.LastSavePath: string;
 begin
-  LastSavePath := IncludeBackslash(LastSaveDir) + '*.til';
+  LastSavePath := IncludeBackslash(StrPas(TileSettings.LastSaveDir)) + '*.til';
 end;
 
 procedure TTileApp.SaveFileAs;
@@ -106,7 +105,13 @@ begin
   result := dialog^.ShowModal;
   if result = mrOk then begin
     tileset^.SaveToFile(dialog^.Filename);
-    CheckError(tileset);
+    if CheckError(tileset) then begin
+      TString.Assign(TileSettings.LastSaveDir, ExtractDirectory(tileset^.Filename));
+      TileSettings.SaveToFile(SettingsFilename);
+      currentTab^.Data := tileset;
+      currentTab^.Button^.SetText(FirstUpper(ExtractFullName(tileset^.Filename)));
+      currentTab^.Draw;
+    end;
   end;
   FreeAndNil(dialog);
 end;
@@ -117,14 +122,14 @@ var
   tab: PTab;
   name: string;
 begin
-{  tileset := New(PTileset, Create);
+  tileset := New(PTileset, Create(19, 19));
   if tileset^.Filename = '' then
     name := 'Untitled.til'
   else
     name := tileset^.Filename;
   tab := Tabs^.NewTab(FirstUpper(ExtractFullName(name)));
   tab^.Data := tileset;
-  AddTileset := tileset;}
+  AddTileset := tileset;
 end;
 
 procedure TTileApp.NewFile;
@@ -151,7 +156,8 @@ begin
   end;
   tileset^.SaveToFile(tileset^.Filename);
   if not CheckError(tileset) then exit;
-  LastSaveDir := ExtractDirectory(tileset^.Filename);
+  TString.Assign(TileSettings.LastSaveDir, ExtractDirectory(tileset^.Filename));
+  TileSettings.SaveToFile(SettingsFilename);
 end;
 
 procedure TTileApp.CloseFile;
@@ -185,9 +191,10 @@ begin
       FreeAndNil(tileset);
       exit;
     end;
+    TString.Assign(TileSettings.LastOpenDir, ExtractDirectory(tileset^.Filename));
+    TileSettings.SaveToFile(SettingsFilename);
     tab := Tabs^.NewTab(ExtractFullName(FirstUpper(tileset^.Filename)));
     tab^.Data := tileset;
-    LastOpenDir := ExtractDirectory(tileset^.Filename);
     Tabs^.Visible := true;
     Tabs^.Draw;
   end;
@@ -259,10 +266,8 @@ end;
 procedure TTileApp.Init;
 begin
   inherited Init;
-  LastOpenDir := GetCurrentDirectory;
-  LastSaveDir := GetCurrentDirectory;
-  Desktop^.DrawBackground := false;
-  TileSettings.Create;
+  Desktop^.DrawBackground := true;
+  TileSettings.LoadFromFile(SettingsFilename);
 end;
 
 procedure TTileApp.InitControls;

@@ -33,7 +33,7 @@ type
     TileCount: integer;
     Name: string[50];
     Compression: TTilesetCompression;
-    Reserved: array[0..190] of byte;
+    Reserved: array[0..189] of byte;
   end;
 
   TTileset = object(TExceptionObject)
@@ -145,9 +145,9 @@ begin
     Raise(ecFileInvalidVersion);
     exit;
   end;
+  Tiles := New(PImageList, Create(header.TileWidth, header.TileHeight));
   if (header.TileCount = 0) or (header.TileWidth <= 0) or (header.TileHeight <= 0) then
     exit;
-  Tiles := New(PImageList, CreateCapacity(header.TileWidth, header.TileHeight, header.TileCount));
   if not Assigned(Tiles) then begin
     Raise(ecNotEnoughMemory);
     exit;
@@ -180,6 +180,7 @@ constructor TTileset.LoadFromFile(const AFilename: string);
 var
   stream: PFileStream;
 begin
+  inherited Create;
   stream := New(PFileStream, Create(AFilename, fmRead));
   if not Assigned(stream) then begin;
     Raise(ecNotEnoughMemory);
@@ -240,9 +241,9 @@ begin
     exit;
   end;
   SaveToStream(stream);
-  LoadFromStream(stream);
   if stream^.HasException then
     Raise(stream^.Exception^.Code);
+  Filename := AFilename;
   FreeAndNil(stream);
 end;
 
