@@ -4,6 +4,11 @@ turbo.*
 tpx.*
 *.bin
 *.$$$
-*.til
+*.lpi
+*.lpr
+*.lps
+*.TD
+backup/
 *.tfa
-*.td
+lib/
+*.TIL

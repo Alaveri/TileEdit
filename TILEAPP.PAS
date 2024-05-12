@@ -4,7 +4,8 @@ unit TileApp;
 interface
 
 uses
-  Objects,
+  AplObj,
+  AplTypes,
   Lists,
   Drawing,
   Tilesets,
@@ -20,6 +21,7 @@ uses
   Veridian,
   Desk,
   Views,
+  TileType,
   TileInit;
 
 type
@@ -28,15 +30,14 @@ type
   TTileApp = object(TVeridianApp)
   private
   public
+    TileSettings: TTileSettings;
     Tabs: PTabView;
-    LastOpenDir: string;
-    LastSaveDir: string;
+    ToolsPanel: PPanel;
     function LastOpenPath: string;
     function LastSavePath: string;
     function HandleActionExecute(ASender: PObject; AAction: PAction): boolean; virtual;
     function AddTileset: PTileset;
     function CheckError(ASender: PExceptionObject): boolean;
-    function CheckAlloc(APointer: pointer): boolean;
     procedure Init; virtual;
     procedure InitControls; virtual;
     procedure InitParams;
@@ -45,6 +46,7 @@ type
     procedure OpenExecute;
     procedure SaveAsExecute;
     procedure AboutExecute;
+    procedure EditSettingsExecute;
     procedure UpdateActionControl(AControl: PActionControl); virtual;
     procedure SaveFileAs;
     procedure SaveFile;
@@ -60,8 +62,8 @@ var
 implementation
 
 uses
-  Dialogs,
-  AplTypes;
+  Strings,
+  Dialogs;
 
 procedure TTileApp.UpdateActionControl(AControl: PActionControl);
 var
@@ -69,21 +71,23 @@ var
   fileOpen: boolean;
 begin
   action := AControl^.Action;
-  fileOpen := Tabs^.Controls^.Count > 0;
+  fileOpen := Tabs^.Count > 0;
   case action^.ActionId of
     acSave: action^.Enabled := fileOpen;
     acSaveAs: action^.Enabled := fileOpen;
+    acCloseAllTabs: action^.Enabled := fileOpen;
+    acCloseTab: action^.Enabled := fileOpen and (Tabs^.TabIndex >= 0);
   end;
 end;
 
 function TTileApp.LastOpenPath: string;
 begin
-  LastOpenPath := IncludeBackslash(LastOpenDir) + '*.til';
+  LastOpenPath := IncludeBackslash(StrPas(TileSettings.LastOpenDir)) + '*.til';
 end;
 
 function TTileApp.LastSavePath: string;
 begin
-  LastSavePath := IncludeBackslash(LastSaveDir) + '*.til';
+  LastSavePath := IncludeBackslash(StrPas(TileSettings.LastSaveDir)) + '*.til';
 end;
 
 procedure TTileApp.SaveFileAs;
@@ -96,28 +100,34 @@ begin
   currentTab := Tabs^.CurrentTab;
   tileset := PTileset(Tabs^.CurrentTab^.Data);
   dialog := New(PFileDialog, Create('Save Tileset As', LastSavePath));
-  if not CheckAlloc(dialog) then exit;
-  dialog^.Options := [];
+  dialog^.Options := [doOverwritePrompt];
+  dialog^.DefaultExt := '.til';
   result := dialog^.ShowModal;
   if result = mrOk then begin
     tileset^.SaveToFile(dialog^.Filename);
-    CheckError(tileset);
+    if CheckError(tileset) then begin
+      TString.Assign(TileSettings.LastSaveDir, ExtractDirectory(tileset^.Filename));
+      TileSettings.SaveToFile(SettingsFilename);
+      currentTab^.Data := tileset;
+      currentTab^.Button^.SetText(FirstUpper(ExtractFullName(tileset^.Filename)));
+      currentTab^.Draw;
+    end;
   end;
-  Desktop^.Controls^.Remove(dialog);
+  FreeAndNil(dialog);
 end;
 
 function TTileApp.AddTileset: PTileset;
 var
   tileset: PTileset;
   tab: PTab;
+  name: string;
 begin
-  tileset := New(PTileset, Create);
-  if not CheckAlloc(tileset) then exit;
-  tab := Tabs^.NewTab;
-  if not CheckAlloc(tab) then begin
-    FreeAndNil(tileset);
-    exit;
-  end;
+  tileset := New(PTileset, Create(19, 19));
+  if tileset^.Filename = '' then
+    name := 'Untitled.til'
+  else
+    name := tileset^.Filename;
+  tab := Tabs^.NewTab(FirstUpper(ExtractFullName(name)));
   tab^.Data := tileset;
   AddTileset := tileset;
 end;
@@ -146,20 +156,12 @@ begin
   end;
   tileset^.SaveToFile(tileset^.Filename);
   if not CheckError(tileset) then exit;
-  LastSaveDir := ExtractDirectory(tileset^.Filename);
+  TString.Assign(TileSettings.LastSaveDir, ExtractDirectory(tileset^.Filename));
+  TileSettings.SaveToFile(SettingsFilename);
 end;
 
 procedure TTileApp.CloseFile;
 begin
-end;
-
-function TTileApp.CheckAlloc(APointer: pointer): boolean;
-begin
-  CheckAlloc := true;
-  if Assigned(APointer) then
-    exit;
-  CheckAlloc := false;
-  Error(@self, ecNotEnoughMemory);
 end;
 
 function TTileApp.CheckError(ASender: PExceptionObject): boolean;
@@ -180,27 +182,23 @@ var
   tab: PTab;
 begin
   dialog := New(PFileDialog, Create('Open Tileset', LastOpenPath));
-  if not CheckAlloc(dialog) then exit;
+  dialog^.Options := [doFileMustExist];
+  dialog^.DefaultExt := '.til';
   result := dialog^.ShowModal;
   if result = mrOk then begin
-    tileset := New(PTileset, Create);
-    if not CheckAlloc(tileset) then exit;
-    tileset^.LoadFromFile(dialog^.Filename);
+    tileset := New(PTileset, LoadFromFile(dialog^.Filename));
     if not CheckError(tileset) then begin
       FreeAndNil(tileset);
       exit;
     end;
-    tab := Tabs^.NewTab;
-    if not CheckAlloc(tab) then begin
-      FreeAndNil(tileset);
-      exit;
-    end;
+    TString.Assign(TileSettings.LastOpenDir, ExtractDirectory(tileset^.Filename));
+    TileSettings.SaveToFile(SettingsFilename);
+    tab := Tabs^.NewTab(ExtractFullName(FirstUpper(tileset^.Filename)));
     tab^.Data := tileset;
-    LastOpenDir := ExtractDirectory(tileset^.Filename);
     Tabs^.Visible := true;
     Tabs^.Draw;
   end;
-  Desktop^.Controls^.Remove(dialog);
+  FreeAndNil(dialog);
 end;
 
 procedure TTileApp.NewExecute;
@@ -223,14 +221,27 @@ begin
   SaveFileAs;
 end;
 
+procedure TTileApp.EditSettingsExecute;
+var
+  dialog: PSettingsDialog;
+  result: TModalResult;
+begin
+  dialog := New(PSettingsDialog, Create(TileSettings));
+  result := dialog^.ShowModal;
+  if result = mrOk then begin
+    TileSettings.Assign(dialog^.Settings);
+    VeridianApp^.Settings.Assign(dialog^.VeridianSettings);
+  end;
+  FreeAndNil(dialog);
+end;
+
 procedure TTileApp.AboutExecute;
 var
   dialog: PAboutDialog;
 begin
   dialog := New(PAboutDialog, Create);
-  if not CheckAlloc(dialog) then exit;
   dialog^.ShowModal;
-  Desktop^.Controls^.Remove(dialog);
+  FreeAndNil(dialog);
 end;
 
 function TTileApp.HandleActionExecute(ASender: PObject; AAction: PAction): boolean;
@@ -243,6 +254,7 @@ begin
     acOpen: OpenExecute;
     acSaveAs: SaveAsExecute;
     acAbout: AboutExecute;
+    acSettings: EditSettingsExecute;
     acExit: Close;
   end;
 end;
@@ -254,17 +266,8 @@ end;
 procedure TTileApp.Init;
 begin
   inherited Init;
-  Tabs := New(PTabView, CreateParent('Tabs', Desktop));
-  Tabs^.BorderStyle := bsNone;
-  Tabs^.Visible := false;
-  Tabs^.SetBounds(
-    0,
-    Desktop^.Menubar^.Height,
-    Desktop^.MenuBar^.Width,
-    Desktop^.Height - Desktop^.Statusbar^.Height - Desktop^.Menubar^.Height + 3
-  );
-  LastOpenDir := GetCurrentDirectory;
-  LastSaveDir := GetCurrentDirectory;
+  Desktop^.DrawBackground := true;
+  TileSettings.LoadFromFile(SettingsFilename);
 end;
 
 procedure TTileApp.InitControls;
@@ -275,8 +278,8 @@ begin
   inherited InitControls;
   TileApplication := @self;
   InitParams;
-  InitActions;
-  InitAppControls;
+  InitActions(Desktop^.ActionList);
+  InitAppControls(@self);
   Desktop^.SetupControls;
 end;
 
@@ -287,5 +290,4 @@ end;
 
 begin
   TileApplication := nil;
-
 end.
