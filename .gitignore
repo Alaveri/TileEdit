@@ -4,3 +4,6 @@ turbo.*
 tpx.*
 *.bin
 *.$$$
+*.til
+*.tfa
+*.td
