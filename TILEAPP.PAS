@@ -22,6 +22,7 @@ uses
   Desk,
   Views,
   TileType,
+  Tools,
   TileInit;
 
 type
@@ -32,12 +33,12 @@ type
   public
     TileSettings: TTileSettings;
     Tabs: PTabView;
-    ToolsPanel: PPanel;
+    Tools: PTools;
     function LastOpenPath: string;
     function LastSavePath: string;
     function HandleActionExecute(ASender: PObject; AAction: PAction): boolean; virtual;
     function AddTileset: PTileset;
-    function CheckError(ASender: PExceptionObject): boolean;
+    function CheckError(ASender: PStatusObject): boolean;
     procedure Init; virtual;
     procedure InitControls; virtual;
     procedure InitParams;
@@ -46,6 +47,8 @@ type
     procedure OpenExecute;
     procedure SaveAsExecute;
     procedure AboutExecute;
+    procedure CloseTabExecute;
+    procedure CloseAllTabsExecute;
     procedure EditSettingsExecute;
     procedure UpdateActionControl(AControl: PActionControl); virtual;
     procedure SaveFileAs;
@@ -59,11 +62,30 @@ type
 var
   TileApplication: PTileApp;
 
+procedure TabClosing(ASender: PObject; var AEvent: TTabClosingEvent); far;
+procedure TabClosed(ASender: PObject; var AEvent: TTabClosedEvent); far;
+
+
 implementation
 
 uses
   Strings,
   Dialogs;
+
+procedure TabClosing(ASender: PObject; var AEvent: TTabClosingEvent);
+var
+  tab: PTab;
+begin
+  tab := PTab(ASender);
+end;
+
+procedure TabClosed(ASender: PObject; var AEvent: TTabClosedEvent);
+var
+  tab: PTab;
+begin
+  tab := PTab(ASender);
+  FreeAndNil(PTileset(tab^.Data));
+end;
 
 procedure TTileApp.UpdateActionControl(AControl: PActionControl);
 var
@@ -75,8 +97,8 @@ begin
   case action^.ActionId of
     acSave: action^.Enabled := fileOpen;
     acSaveAs: action^.Enabled := fileOpen;
-    acCloseAllTabs: action^.Enabled := fileOpen;
-    acCloseTab: action^.Enabled := fileOpen and (Tabs^.TabIndex >= 0);
+    acCloseAll: action^.Enabled := fileOpen;
+    acClose: action^.Enabled := fileOpen and (Tabs^.TabIndex >= 0);
   end;
 end;
 
@@ -164,7 +186,7 @@ procedure TTileApp.CloseFile;
 begin
 end;
 
-function TTileApp.CheckError(ASender: PExceptionObject): boolean;
+function TTileApp.CheckError(ASender: PStatusObject): boolean;
 begin
   CheckError := true;
   if not ASender^.HasException then
@@ -244,6 +266,17 @@ begin
   FreeAndNil(dialog);
 end;
 
+procedure TTileApp.CloseTabExecute;
+begin
+  if (Tabs^.TabIndex < 0) or (Tabs^.TabIndex > Tabs^.Count - 1) then
+    exit;
+  Tabs^.CloseTab(Tabs^.CurrentTab);
+end;
+
+procedure TTileApp.CloseAllTabsExecute;
+begin
+end;
+
 function TTileApp.HandleActionExecute(ASender: PObject; AAction: PAction): boolean;
 begin
   if inherited HandleActionExecute(ASender, AAction) then
@@ -251,6 +284,8 @@ begin
   case AAction^.ActionId of
     acNew: NewExecute;
     acSave: SaveExecute;
+    acClose: CloseTabExecute;
+    acCloseAll: CloseAllTabsExecute;
     acOpen: OpenExecute;
     acSaveAs: SaveAsExecute;
     acAbout: AboutExecute;

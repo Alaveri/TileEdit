@@ -10,7 +10,7 @@ uses
   TileApp;
 
 begin
-  TileApplication := New(PTileApp, Create(gdSVga8, 'SVga640x480x8'));
+  TileApplication := New(PTileApp, Create(gdVga8, 640, 480, 8));
   TileApplication^.Run;
   TileApplication^.Free;
 end.

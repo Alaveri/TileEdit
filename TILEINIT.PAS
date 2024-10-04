@@ -31,9 +31,12 @@ const
   acDelete = 2006;
   acSettings = 2100;
 
-  { Tab ACtions }
-  acCloseTab = 3001;
-  acCloseAllTabs = 3002;
+  { Tile Actions }
+  acNewTile = 3001;
+
+  { Tab Actions }
+  acClose = 4001;
+  acCloseAll = 4002;
 
   { Help Actions }
   acAbout = 5001;
@@ -77,6 +80,7 @@ uses
   Drawing,
   Common,
   MemDrv,
+  Tools,
   GraphDrv,
   ListBox,
   TileApp,
@@ -94,8 +98,8 @@ begin
   with PTileApp(AApp)^ do begin
     StatusBar^.NewHelpPanel;
 
-    ToolsPanel := New(PPanel, CreateParent('ToolsPanel', Desktop));
-    with ToolsPanel^ do begin
+    Tools := New(PTools, CreateParent('ToolsPanel', Desktop));
+    with Tools^ do begin
       SetBounds(
         -1,
         Menubar^.Height - 1,
@@ -113,7 +117,10 @@ begin
       NewMenuItem('SaveMenuItem', acSave);
       NewMenuItem('SaveAsMenuItem', acSaveAs);
       NewSeparator;
-      NewMenuItem('ExitMenuAction', acExit);
+      NewMenuItem('CloseMenuItem', acClose);
+      NewMenuItem('CloseAllMenuItem', acCloseAll);
+      NewSeparator;
+      NewMenuItem('ExitMenuItem', acExit);
     end;
 
     menu := MenuBar^.NewMenu('EditMenu', '&Edit');
@@ -129,10 +136,9 @@ begin
       NewMenuItem('Settings', acSettings);
     end;
 
-    menu := MenuBar^.NewMenu('TabMenu', '&Tab');
-    with Menu^ do begin
-      NewMenuItem('CloseTabMenuItem', acCloseTab);
-      NewMenuItem('CloseAllTabsMenuItem', acCloseAllTabs);
+    menu := MenuBar^.NewMenu('TilesMenu', '&Tile');
+    with menu^ do begin
+      NewMenuItem('NewTile', acNewTile);
     end;
 
     menu := MenuBar^.NewMenu('HelpMenu', '&Help');
@@ -143,10 +149,12 @@ begin
     Tabs := New(PTabView, CreateParent('Tabs', Desktop));
     with Tabs^ do begin
       BorderStyle := bsNone;
+      OnTabClosing := @TabClosing;
+      OnTabClosed := @TabClosed;
       SetBounds(
-        ToolsPanel^.Width - 1,
+        Tools^.Width - 1,
         Menubar^.Height,
-        Desktop^.Width - ToolsPanel^.Width + 3,
+        Desktop^.Width - Tools^.Width + 3,
         Desktop^.Height - Statusbar^.Height - Menubar^.Height + 3
       );
     end;
@@ -206,16 +214,20 @@ begin
     action^.SetHelpText('Delete selection');
     Add(action);
 
-    action := New(PAction, Create(acCloseTab, '&Close Tab', kyCtrlF4));
-    action^.SetHelpText('Close the active tab');
+    action := New(PAction, Create(acClose, '&Close', kyCtrlF4));
+    action^.SetHelpText('Close the active file');
     Add(action);
 
-    action := New(PAction, Create(acCloseAllTabs, 'Close A&ll Tabs', 0));
-    action^.SetHelpText('Close all tabs');
+    action := New(PAction, Create(acCloseAll, 'Close A&ll', 0));
+    action^.SetHelpText('Close all files');
     Add(action);
 
     action := New(PAction, Create(acSettings, '&Settings', 0));
     action^.SetHelpText('Edit program settings');
+    Add(action);
+
+    action := New(PAction, Create(acNewTile, 'New &Tile', kyCtrlT));
+    action^.SetHelpText('Add a new tile');
     Add(action);
   end;
 end;
@@ -242,7 +254,7 @@ begin
   Font := VeridianApp^.SystemFont;
   Width := VeridianApp^.Scale(25);
   Height := VeridianApp^.Scale(18);
-  ButtonAlign := taRight;
+  ButtonAlign := haRight;
   DefaultButton := mbOk;
   CancelButton := mbCancel;
   SetTitle('Program Settings');
@@ -319,6 +331,7 @@ begin
   Y := CenterY;
   labelHeight := Font^.Height;
   GetContentBounds(rect);
+
   currentX := rect.X;
   currentY := rect.Y + labelHeight;
 
@@ -343,13 +356,13 @@ begin
   Width := VeridianApp^.Scale(20);
   Height := VeridianApp^.Scale(12);
   SetTitle('About');
-  ButtonAlign := taCenter;
+  ButtonAlign := haCenter;
 
   TitleLabel := New(PLabel, CreateParent('TitleLabel', @self));
   with TitleLabel^ do begin
     Font := VeridianApp^.SystemFont;
     Autosize := false;
-    TextAlign := taCenter;
+    TextAlign := haCenter;
     SetText('Alaveri Tileset Editor');
   end;
 
@@ -357,7 +370,7 @@ begin
   with VersionLabel^ do begin
     Font := VeridianApp^.SystemFont;
     Autosize := false;
-    TextAlign := taCenter;
+    TextAlign := haCenter;
     SetText('Version ' + AppVersion);
   end;
 
@@ -368,7 +381,7 @@ begin
     Font := VeridianApp^.Fonts^.GetItemById('seattle');
     Margin := 8;
     Autosize := false;
-    TextAlign := taLeft;
+    TextAlign := haLeft;
     SetText('Free Memory: ' + FormatLong(MemAvail) + ' bytes');
   end;
 
@@ -377,7 +390,7 @@ begin
     Font := VeridianApp^.Fonts^.GetItemById('seattle');
     Margin := 8;
     Autosize := false;
-    TextAlign := taLeft;
+    TextAlign := haLeft;
     SetText('Free XMS Memory: ' + FormatLong(Memory.XmsMaxAvail) + ' bytes');
   end;
 end;

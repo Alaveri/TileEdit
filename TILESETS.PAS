@@ -36,7 +36,7 @@ type
     Reserved: array[0..189] of byte;
   end;
 
-  TTileset = object(TExceptionObject)
+  TTileset = object(TStatusObject)
   private
   public
     Tiles: PImageList;
@@ -54,7 +54,7 @@ type
     destructor Free; virtual;
   end;
 
-  TImageList = object(TExceptionObject)
+  TImageList = object(TStatusObject)
   private
     FStream: PMemoryStream;
     FWidth: word;
@@ -306,7 +306,7 @@ begin
   if FCapacity = ACapacity then
     exit;
   if ACapacity > ListBufferSize then begin
-    Raise(ecCollectionCapacityOverflow);
+    Raise(ecListCapacityOverflow);
     exit;
   end;
   dataSize := FWidth * FHeight * ACapacity;
