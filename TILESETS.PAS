@@ -154,7 +154,7 @@ begin
   end;
   if header.Compression = tcLzw then begin
     lzw.Create;
-    lzw.DecompressStream(AStream, Tiles^.FStream);
+    lzw.DecompressStream(AStream, Tiles^.FStream, 0);
     AStream^.Seek(0, soFromBeginning);
     if lzw.HasException then begin
       Raise(lzw.Exception^.Code);

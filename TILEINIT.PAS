@@ -7,6 +7,7 @@ uses
   AplObj,
   Desk,
   Actions,
+  VTypes,
   Veridian,
   AplTypes,
   TileType,

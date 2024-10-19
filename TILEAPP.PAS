@@ -38,7 +38,7 @@ type
     function LastSavePath: string;
     function HandleActionExecute(ASender: PObject; AAction: PAction): boolean; virtual;
     function AddTileset: PTileset;
-    function CheckError(ASender: PStatusObject): boolean;
+    function CheckError(ASender: PStatusObject): boolean; virtual;
     procedure Init; virtual;
     procedure InitControls; virtual;
     procedure InitParams;
@@ -313,7 +313,7 @@ begin
   inherited InitControls;
   TileApplication := @self;
   InitParams;
-  InitActions(Desktop^.ActionList);
+  TileInit.InitActions(Desktop^.ActionList);
   InitAppControls(@self);
   Desktop^.SetupControls;
 end;
